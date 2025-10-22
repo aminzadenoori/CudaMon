@@ -1,5 +1,3 @@
-Sure, Mohammad Amin Zadenoori. Here's the vignette file content, clean and complete:
-
 ---
 title: "GPU-Accelerated PCA Workflow with System Monitoring"
 author: "Mohammad Amin Zadenoori"
