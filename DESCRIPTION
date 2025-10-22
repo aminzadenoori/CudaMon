@@ -1,0 +1,15 @@
+Package: CudaMon
+Title: Extended System and GPU Monitoring with Collectl and NVML
+Version: 0.2.0
+Imports:
+    processx,
+    bgmeter,
+    R6,
+    lubridate,
+    ggplot2,
+    jsonlite,
+    dplyr,
+    Rcollectl,
+    gridExtra
+LinkingTo: Rcpp
+SystemRequirements: collectl, NVIDIA NVML library

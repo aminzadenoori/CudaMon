@@ -1,0 +1,129 @@
+Sure, Mohammad Amin Zadenoori. Here's the vignette file content, clean and complete:
+
+---
+title: "GPU-Accelerated PCA Workflow with System Monitoring"
+author: "Mohammad Amin Zadenoori"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{GPU-Accelerated PCA Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## Overview
+
+This vignette demonstrates how to use `CudaMon` to monitor system resources during a GPU-accelerated PCA workflow using CuPy for matrix operations.
+
+## Load Required Packages
+
+```{r load-packages}
+library(CudaMon)
+library(reticulate)
+library(Matrix)
+library(bench)
+library(bgmeter)
+library(ggplot2)
+```
+
+## Python Environment Setup
+
+```{r python-setup}
+use_python("/usr/bin/python3") # Adjust path if needed
+np <- import("numpy")
+cp <- import("cupy")
+```
+
+## Start System Monitoring
+
+```{r start-monitoring}
+proc <- CudaMon::cl_start("temp", monitor_gpu = TRUE, gpu_monitor_type = "nvml")
+CudaMon::cl_timestamp(proc, "start")
+```
+
+## Define GPU-Accelerated PCA Functions
+
+```{r define-functions}
+create_dense_matrix <- function(n_rows = 1e5, n_cols = 1e3) {
+  matrix_data <- sample(-128L:127L, n_rows * n_cols, replace = TRUE)
+  matrix(matrix_data, nrow = as.integer(n_rows), ncol = as.integer(n_cols), byrow = TRUE)
+}
+
+to_gpu <- function(dense_m) {
+  cp$array(dense_m, dtype = cp$int8)
+}
+
+run_gpu_pca <- function(gpu_dense, n_components = 50L) {
+  data_f32 <- gpu_dense$astype(cp$float32)
+  mean <- cp$mean(data_f32, axis = 0L)
+  centered <- data_f32 - mean
+  svd_result <- cp$linalg$svd(centered, full_matrices = FALSE)
+  vh <- svd_result[[3]]
+  components <- vh$T[, 0L:(as.integer(n_components)-1L)]
+  return(components)
+}
+```
+
+## Benchmarking Function
+
+```{r benchmark-function}
+benchmark_pca <- function() {
+  cat("Creating dense matrix...\n")
+  CudaMon::cl_timestamp(proc, "create_matrix")
+  dense_m <- create_dense_matrix()
+  
+  cat("Transferring to GPU...\n")
+  CudaMon::cl_timestamp(proc, "to_gpu")
+  gpu_dense <- to_gpu(dense_m)
+  
+  cat("Running PCA...\n")
+  CudaMon::cl_timestamp(proc, "run_pca")
+  bench_result <- bench::mark(
+    pca = run_gpu_pca(gpu_dense),
+    iterations = 5L,
+    check = FALSE
+  )
+  
+  return(bench_result)
+}
+```
+
+## Execute Workflow
+
+```{r execute-workflow}
+results <- benchmark_pca()
+CudaMon::cl_timestamp(proc, "end")
+```
+
+## Stop Monitoring and Generate Report
+
+```{r stop-monitoring}
+CudaMon::cl_stop(proc)
+```
+
+## System Metrics Visualization
+
+```{r visualization}
+CudaMon::cl_plot_system_metrics(proc)
+```
+
+## Benchmark Results
+
+```{r results}
+print(results)
+```
+
+## Workflow Summary
+
+This vignette demonstrated:
+
+1. **System Monitoring**: Using `CudaMon` to monitor CPU and GPU resources  
+2. **GPU Acceleration**: Leveraging CuPy for matrix operations on GPU  
+3. **Workflow Timing**: Marking key workflow stages with timestamps  
+4. **Performance Analysis**: Benchmarking computation and visualizing resource usage  
+
+The system metrics plot shows how resources were utilized during each phase of the workflow, helping identify bottlenecks and optimize performance.
