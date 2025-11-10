@@ -1,6 +1,5 @@
 Package: CudaMon
 Title: Extended System and GPU Monitoring with Collectl and NVML
-Version: 0.2.0
 Imports:
     processx,
     bgmeter,
@@ -10,6 +9,16 @@ Imports:
     jsonlite,
     dplyr,
     Rcollectl,
-    gridExtra
+    gridExtra,
+    tidyr
 LinkingTo: Rcpp
 SystemRequirements: collectl, NVIDIA NVML library
+Version: 0.1.0
+Date: 2025-10-11
+Authors@R: 
+    c(person(given = "Mohammad Amin",
+           family = "Zadenoori",
+           role = c("aut", "cre"),
+           email = "Amin.zadenoori@gmail.com"))
+Description: Provide functions to monitor NVIDIA GPU data and processes in a UNIX environment. Parse the output from a collectl run and the collected GPU data. Visualize aspects of system usage and GPU metrics.
+License: Artistic-2.0
