@@ -10,7 +10,11 @@ Imports:
     dplyr,
     Rcollectl,
     gridExtra,
-    tidyr
+    tidyr,
+    testthat,
+    bench,
+    reticulate,
+    Matrix
 LinkingTo: Rcpp
 SystemRequirements: collectl, NVIDIA NVML library
 Version: 0.1.0
