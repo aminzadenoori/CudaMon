@@ -1,6 +1,9 @@
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+FROM nvidia/cuda:13.0.0-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# First add NVIDIA package repository
+NV DEBIAN_FRONTEND=noninteractive
 
 # First add NVIDIA package repository
 RUN apt-get update -y && \
