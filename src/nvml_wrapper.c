@@ -6,7 +6,7 @@
 SEXP nvml_init() {
     nvmlReturn_t result = nvmlInit_v2(); // Use v2 for better compatibility
     if (result != NVML_SUCCESS) {
-        Rprintf(nvmlErrorString(result));
+        Rprintf("%s\n", nvmlErrorString(result));
         Rf_error("NVML Init failed: %s", nvmlErrorString(result));
     }
     Rprintf("Sucess");
