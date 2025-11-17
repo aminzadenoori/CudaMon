@@ -1,0 +1,341 @@
+---
+title: "GPU-Accelerated Matrix Multiplication with CUDA in R"
+author: "Mohammad Amin Zadenoori"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{GPU-Accelerated Matrix Multiplication with CUDA in R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 8,
+  fig.height = 6
+)
+```
+
+# GPU-Accelerated Matrix Multiplication with CUDA in R
+
+## Overview
+
+This vignette demonstrates how to use the `cudaMatrix` package to perform high-performance matrix multiplication on NVIDIA GPUs using CUDA. The package provides an R interface to CUDA-accelerated matrix operations, enabling significant speedups for large-scale linear algebra computations.
+
+## Prerequisites
+
+Before using this package, ensure you have:
+
+- **NVIDIA GPU** with Compute Capability 3.5 or higher
+- **CUDA Toolkit** (version 11.0 or higher)
+- **R** (version 4.0 or higher)
+- **nvcc** compiler available in PATH
+
+## Installation and Compilation
+
+First, let's compile the CUDA code:
+
+```{r compilation, eval=FALSE}
+# Compile the CUDA code
+compile_cuda_code <- function() {
+  cat("Compiling CUDA C code...\n")
+  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudaMatrix.so matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
+  system(compile_cmd)
+  
+  if (file.exists("cudaMatrix.so")) {
+    cat("Compilation successful!\n")
+  } else {
+    cat("Compilation failed. Please check your CUDA installation.\n")
+  }
+}
+
+# Run compilation
+compile_cuda_code()
+```
+
+## Basic Usage
+
+Load the shared library and define the wrapper function:
+
+```{r basic_usage, eval=FALSE}
+# Load the shared library
+dyn.load("cudaMatrix.so")
+
+# R wrapper function
+cuda_matrix_multiply <- function(iterations = 10) {
+  if (!is.loaded("cuda_matrix_multiply")) {
+    stop("CUDA matrix multiply function not loaded. Please compile the C code first.")
+  }
+  
+  result <- .Call("cuda_matrix_multiply", as.integer(iterations))
+  return(result)
+}
+
+# Perform matrix multiplication
+result <- cuda_matrix_multiply(iterations = 5)
+cat("Total computation time:", result, "ms\n")
+```
+
+## Performance Benchmarking
+
+Let's compare the performance of our CUDA implementation:
+
+```{r benchmarking, eval=FALSE}
+library(bench)
+
+test_cuda_matrix_multiply <- function() {
+  cat("Starting CUDA Matrix Multiplication Test...\n")
+  cat("Matrix A: 1,000,000 x 1,000\n")
+  cat("Matrix B: 1,000,000 x 1,000\n")
+  cat("Output C: 1,000 x 1,000 (A^T * B)\n")
+  cat("Iterations: 10\n")
+  
+  # Time the operation
+  timing <- system.time({
+    result <- cuda_matrix_multiply(iterations = 10)
+  })
+  
+  cat("CUDA Matrix Multiplication Completed!\n")
+  cat("Total time:", timing["elapsed"], "seconds\n")
+  cat("R result:", result, "\n")
+  
+  # Benchmark with multiple iterations
+  cat("\nRunning benchmark...\n")
+  bench_result <- bench::mark(
+    cuda_matrix_multiply(iterations = 1),
+    iterations = 5,
+    check = FALSE
+  )
+  
+  print(bench_result)
+  
+  return(list(
+    timing = timing,
+    bench_result = bench_result,
+    cuda_result = result
+  ))
+}
+
+# Run benchmark
+benchmark_results <- test_cuda_matrix_multiply()
+```
+
+## GPU Monitoring with CudaMon
+
+Monitor GPU usage during matrix multiplication:
+
+```{r gpu_monitoring, eval=FALSE}
+library(CudaMon)
+library(ggplot2)
+
+monitor_cuda_multiplication <- function(iterations = 10) {
+  # Start collectl with GPU monitoring
+  proc <- CudaMon::cl_start("cuda_matrix_benchmark", 
+                           monitor_gpu = TRUE, 
+                           gpu_monitor_type = "nvml")
+  
+  cat("Starting GPU monitoring...\n")
+  CudaMon::cl_timestamp(proc, "start")
+  
+  # Perform matrix multiplication
+  CudaMon::cl_timestamp(proc, "before_multiplication")
+  result <- cuda_matrix_multiply(iterations = iterations)
+  CudaMon::cl_timestamp(proc, "after_multiplication")
+  
+  # Stop monitoring
+  CudaMon::cl_stop(proc)
+  
+  # Parse and analyze results
+  targ <- CudaMon::cl_result_path(proc)
+  parsed <- CudaMon::cl_parse(targ)
+  
+  # Create plots
+  system_plot <- CudaMon::cl_plot_system_metrics(proc)
+  
+  # GPU-specific plots
+  if ("gpu_usage" %in% names(parsed)) {
+    gpu_plot <- ggplot2::ggplot(parsed, ggplot2::aes(x = timestamp, y = gpu_usage)) +
+      ggplot2::geom_line(color = "blue", linewidth = 1) +
+      ggplot2::labs(
+        title = "GPU Usage During Matrix Multiplication",
+        x = "Time", 
+        y = "GPU Usage (%)"
+      ) +
+      ggplot2::theme_minimal()
+    
+    print(gpu_plot)
+  }
+  
+  return(list(
+    computation_time = result,
+    monitoring_data = parsed,
+    plot = system_plot
+  ))
+}
+
+# Run with monitoring
+monitoring_results <- monitor_cuda_multiplication(iterations = 5)
+```
+
+## Complete Test Workflow
+
+Here's a complete test workflow that combines compilation, execution, and monitoring:
+
+```{r complete_test, eval=FALSE}
+test_cuda_matrix_workflow <- function() {
+  # Load required libraries
+  library(CudaMon)
+  library(bench)
+  library(ggplot2)
+  
+  # Check if compiled, compile if not
+  if (!file.exists("cudaMatrix.so")) {
+    cat("cudaMatrix.so not found. Compiling...\n")
+    compile_cuda_code()
+  }
+  
+  # Load the shared library
+  dyn.load("cudaMatrix.so")
+  
+  # Define wrapper function
+  cuda_matrix_multiply <- function(iterations = 10) {
+    if (!is.loaded("cuda_matrix_multiply")) {
+      stop("CUDA matrix multiply function not loaded.")
+    }
+    .Call("cuda_matrix_multiply", as.integer(iterations))
+  }
+  
+  # Start GPU monitoring
+  proc <- CudaMon::cl_start("cuda_matrix_workflow", 
+                           monitor_gpu = TRUE, 
+                           gpu_monitor_type = "nvml")
+  
+  cat("=== CUDA Matrix Multiplication Workflow ===\n")
+  cat("Matrix dimensions: 1,000,000 x 1,000\n")
+  cat("Output dimensions: 1,000 x 1,000\n")
+  
+  # Timestamp key phases
+  CudaMon::cl_timestamp(proc, "workflow_start")
+  
+  # Phase 1: Single iteration test
+  cat("\n1. Testing single iteration...\n")
+  CudaMon::cl_timestamp(proc, "single_iteration_start")
+  single_result <- cuda_matrix_multiply(iterations = 1)
+  CudaMon::cl_timestamp(proc, "single_iteration_end")
+  
+  # Phase 2: Multiple iterations
+  cat("\n2. Testing multiple iterations...\n")
+  CudaMon::cl_timestamp(proc, "multiple_iterations_start")
+  multi_result <- cuda_matrix_multiply(iterations = 5)
+  CudaMon::cl_timestamp(proc, "multiple_iterations_end")
+  
+  # Phase 3: Benchmark
+  cat("\n3. Running benchmark...\n")
+  CudaMon::cl_timestamp(proc, "benchmark_start")
+  bench_results <- bench::mark(
+    cuda_matrix_multiply(iterations = 1),
+    iterations = 3,
+    check = FALSE
+  )
+  CudaMon::cl_timestamp(proc, "benchmark_end")
+  
+  # Stop monitoring
+  CudaMon::cl_stop(proc)
+  
+  # Analyze results
+  targ <- CudaMon::cl_result_path(proc)
+  parsed <- CudaMon::cl_parse(targ)
+  
+  # Generate report
+  cat("\n=== RESULTS ===\n")
+  cat("Single iteration time:", single_result, "ms\n")
+  cat("Multiple iterations time:", multi_result, "ms\n")
+  cat("Benchmark results:\n")
+  print(bench_results)
+  
+  if ("gpu_usage" %in% names(parsed)) {
+    cat("\nGPU Usage Statistics:\n")
+    cat("Average GPU usage:", mean(parsed$gpu_usage, na.rm = TRUE), "%\n")
+    cat("Maximum GPU usage:", max(parsed$gpu_usage, na.rm = TRUE), "%\n")
+  }
+  
+  # Create comprehensive plot
+  system_plot <- CudaMon::cl_plot_system_metrics(proc)
+  print(system_plot)
+  
+  return(list(
+    single_iteration = single_result,
+    multiple_iterations = multi_result,
+    benchmark = bench_results,
+    monitoring_data = parsed,
+    plot = system_plot
+  ))
+}
+
+# Execute complete workflow
+workflow_results <- test_cuda_matrix_workflow()
+```
+
+## Performance Analysis
+
+### Expected Performance Gains
+
+The CUDA implementation provides significant speedups for large matrix operations:
+
+- **CPU-based matrix multiplication**: O(n³) complexity makes it slow for large matrices
+- **GPU acceleration**: Parallel processing across thousands of CUDA cores
+- **Memory bandwidth**: GPU memory bandwidth is typically 5-10x higher than CPU
+
+### Memory Considerations
+
+- Each 1,000,000 × 1,000 matrix requires ~4GB of memory (using int32)
+- The implementation processes matrices efficiently to avoid memory bottlenecks
+- GPU memory usage is optimized by processing appropriate batch sizes
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Compilation Errors**
+   - Ensure CUDA Toolkit is installed and `nvcc` is in PATH
+   - Check GPU compute capability compatibility
+
+2. **Runtime Errors**
+   - Verify GPU has sufficient memory for matrix sizes
+   - Check that CUDA drivers are up to date
+
+3. **Performance Issues**
+   - Monitor GPU utilization to identify bottlenecks
+   - Adjust matrix sizes based on available GPU memory
+
+### Debugging Tips
+
+```{r debugging, eval=FALSE}
+# Check CUDA installation
+system("nvcc --version")
+
+# Check GPU information
+system("nvidia-smi")
+
+# Test with smaller matrices first
+test_small <- cuda_matrix_multiply(iterations = 1)
+```
+
+## Conclusion
+
+The `cudaMatrix` package provides a powerful interface for GPU-accelerated matrix operations in R. By leveraging CUDA, users can achieve significant performance improvements for large-scale linear algebra computations. The integration with `CudaMon` allows for comprehensive monitoring and optimization of GPU resources.
+
+## Further Reading
+
+- [CUDA Toolkit Documentation](https://docs.nvidia.com/cuda/)
+- [R External Interfaces](https://cran.r-project.org/doc/manuals/R-exts.html)
+- [GPU Computing for Machine Learning](https://developer.nvidia.com/machine-learning)
+
+## Session Info
+
+```{r session_info}
+sessionInfo()
+```
