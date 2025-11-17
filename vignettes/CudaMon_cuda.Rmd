@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-This vignette demonstrates how to use the `cudaMatrix` package to perform high-performance matrix multiplication on NVIDIA GPUs using CUDA. The package provides an R interface to CUDA-accelerated matrix operations, enabling significant speedups for large-scale linear algebra computations.
+This vignette demonstrates how to use the `CudaMon` package to monitor a NVIDIA GPU during performing high-performance matrix multiplication on NVIDIA GPUs using CUDA.
 
 ## Prerequisites
 
