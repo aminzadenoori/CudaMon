@@ -1,2 +1,55 @@
-PKG_CPPFLAGS = -I/usr/local/cuda/include
-PKG_LIBS = -L/usr/lib/x86_64-linux-gnu -lnvidia-ml
+# Compiler and flags
+CXX = g++
+CC = gcc
+CUDA_HOME = /usr/local/cuda
+NVCC = $(CUDA_HOME)/bin/nvcc
+
+# R configuration
+R_HOME = $(shell R RHOME)
+
+# Include directories - ONLY ONCE
+PKG_CPPFLAGS = -I$(R_HOME)/include -I$(CUDA_HOME)/include
+
+# Compiler flags with -fPIC for shared library
+PKG_CFLAGS = -O2 -Wall -std=gnu2x -fPIC
+PKG_CXXFLAGS = -O2 -Wall -fPIC
+
+# NVCC flags
+NVCC_FLAGS = --compiler-options="-O2 -Wall -fPIC" -Xcompiler -fPIC
+NVCC_FLAGS += -I /usr/share/R/include
+
+## Add to compiler flags
+PKG_CPPFLAGS = -I$(R_INCLUDE_DIR) -I/usr/local/cuda/include
+
+# Library paths - CORRTED
+PKG_LIBS = -L$(CUDA_HOME)/lib64 -lcudart -lcuda -lnvidia-ml
+#PKG_LIBS = -L/usr/lib/x86_64-linux-gnu -lcudart -lcuda -lnvidia-ml
+
+# Source files - CORRECTED (you mentioned nvml_wrapper.c in the error)
+CUDA_SOURCES = cudamatrix.cu
+C_SOURCES = init.c nvml_wrapper.c
+
+# Object files
+CUDA_OBJS = $(CUDA_SOURCES:.cu=.o)
+C_OBJS = $(C_SOURCES:.c=.o)
+
+# Default target
+all: $(SHLIB)
+
+# Pattern rule for compiling CUDA files
+%.o: %.cu
+	$(NVCC) $(NVCC_FLAGS) $(PKG_CPPFLAGS) -c $< -o $@
+
+# Pattern rule for compiling C files - WITH -fPIC
+%.o: %.c
+	$(CC) $(PKG_CFLAGS) $(PKG_CPPFLAGS) -c $< -o $@
+
+# Shared library target
+$(SHLIB): $(CUDA_OBJS) $(C_OBJS)
+	$(CC) -shared -o $@ $^ $(PKG_LIBS) $(LDFLAGS)
+
+# Clean target
+clean:
+	rm -f *.o *.so
+
+.PHONY: all clean

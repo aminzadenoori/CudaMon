@@ -26,3 +26,4 @@ Authors@R:
            email = "Amin.zadenoori@gmail.com"))
 Description: Provide functions to monitor NVIDIA GPU data and processes in a UNIX environment. Parse the output from a collectl run and the collected GPU data. Visualize aspects of system usage and GPU metrics.
 License: Artistic-2.0
+RoxygenNote: 7.3.3

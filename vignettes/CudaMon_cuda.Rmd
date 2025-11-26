@@ -42,10 +42,10 @@ First, let's compile the CUDA code:
 # Compile the CUDA code
 compile_cuda_code <- function() {
   cat("Compiling CUDA C code...\n")
-  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudaMatrix.so matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
+  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudamatrix.so matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
   system(compile_cmd)
   
-  if (file.exists("cudaMatrix.so")) {
+  if (file.exists("cudamatrix.so")) {
     cat("Compilation successful!\n")
   } else {
     cat("Compilation failed. Please check your CUDA installation.\n")
@@ -62,7 +62,7 @@ Load the shared library and define the wrapper function:
 
 ```{r basic_usage, eval=FALSE}
 # Load the shared library
-dyn.load("cudaMatrix.so")
+dyn.load("cudamatrix.so")
 
 # R wrapper function
 cuda_matrix_multiply <- function(iterations = 10) {
@@ -192,13 +192,13 @@ test_cuda_matrix_workflow <- function() {
   library(ggplot2)
   
   # Check if compiled, compile if not
-  if (!file.exists("cudaMatrix.so")) {
-    cat("cudaMatrix.so not found. Compiling...\n")
+  if (!file.exists("cudamatrix.so")) {
+    cat("cudamatrix.so not found. Compiling...\n")
     compile_cuda_code()
   }
   
   # Load the shared library
-  dyn.load("cudaMatrix.so")
+  dyn.load("cudamatrix.so")
   
   # Define wrapper function
   cuda_matrix_multiply <- function(iterations = 10) {
@@ -326,7 +326,7 @@ test_small <- cuda_matrix_multiply(iterations = 1)
 
 ## Conclusion
 
-The `cudaMatrix` package provides a powerful interface for GPU-accelerated matrix operations in R. By leveraging CUDA, users can achieve significant performance improvements for large-scale linear algebra computations. The integration with `CudaMon` allows for comprehensive monitoring and optimization of GPU resources.
+The `cudamatrix` package provides a powerful interface for GPU-accelerated matrix operations in R. By leveraging CUDA, users can achieve significant performance improvements for large-scale linear algebra computations. The integration with `CudaMon` allows for comprehensive monitoring and optimization of GPU resources.
 
 ## Further Reading
 

@@ -4,10 +4,10 @@ test_that("CudaMon GPU Matrix Multiplication benchmark workflow executes correct
   library(ggplot2)
   
   # Load the shared library (make sure it's compiled first)
-  if (!file.exists("cudaMatrix.so")) {
+  if (!file.exists("cudamatrix.o")) {
     stop("Please compile the CUDA code first using compile_cuda_code()")
   }
-  dyn.load("cudaMatrix.so")
+  dyn.load("cudamatrix.o")
   
   # R wrapper function
   cuda_matrix_multiply <- function(iterations = 10) {
@@ -145,10 +145,10 @@ test_that("CudaMon GPU Matrix Multiplication benchmark workflow executes correct
 # Compile function (same as your original)
 compile_cuda_code <- function() {
   cat("Compiling CUDA C code...\n")
-  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudaMatrix.so matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
+  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudamatrix.o matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
   system(compile_cmd)
   
-  if (file.exists("cudaMatrix.so")) {
+  if (file.exists("cudamatrix.o")) {
     cat("Compilation successful! Now you can run the test\n")
   } else {
     cat("Compilation failed. Please check your CUDA installation.\n")
@@ -164,8 +164,8 @@ run_cuda_matrix_test <- function() {
   cat("> test_that('CudaMon GPU Matrix Multiplication benchmark workflow executes correctly', { ... })\n")
   
   # Check if compiled
-  if (!file.exists("cudaMatrix.so")) {
-    cat("cudaMatrix.so not found. Please compile first.\n")
+  if (!file.exists("cudamatrix.o")) {
+    cat("cudamatrix.o not found. Please compile first.\n")
     return(FALSE)
   }
   

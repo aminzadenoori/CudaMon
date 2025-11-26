@@ -1,5 +1,5 @@
 # Load the shared library
-dyn.load("cudaMatrix.so")
+#dyn.load("cudamatrix.o")
 
 # R wrapper function
 cuda_matrix_multiply <- function(iterations = 10) {
@@ -50,10 +50,10 @@ test_cuda_matrix_multiply <- function() {
 # Compile function
 compile_cuda_code <- function() {
   cat("Compiling CUDA C code...\n")
-  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudaMatrix.so matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
+  compile_cmd <- "nvcc -Xcompiler -fPIC -shared -o cudamatrix.o matrix_multiply.c -I/usr/share/R/include -L/usr/lib/R/lib -lR -lcudart"
   system(compile_cmd)
   
-  if (file.exists("cudaMatrix.so")) {
+  if (file.exists("cudamatrix.o")) {
     cat("Compilation successful! Now you can run test_cuda_matrix_multiply()\n")
   } else {
     cat("Compilation failed. Please check your CUDA installation.\n")
